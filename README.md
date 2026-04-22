@@ -52,6 +52,9 @@ Code between wait() calls are guaranteed to run in sequence, but the function ma
 State Machine object
 ==================
 
+As mentioned before, these functions should mainly be attached to user input.   
+Create a new state machine for each player character, then clear it once the character dies/is removed.   
+
 
 module.new(startingStates : {State}?) : StateMachine
 ------------------
@@ -80,7 +83,7 @@ StateMachine:hasActiveState(... : string) : boolean
 This function checks if any of the given strings matches the active state, and if so, returns true.
 
 
-StateMachine::hasState(stateName : string) : State?
+StateMachine:hasState(stateName : string) : State?
 ------------------
 
 Maps a state name to the State within the StateMachine.   
