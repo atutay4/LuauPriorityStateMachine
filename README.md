@@ -1,5 +1,5 @@
 
-Lua priority state machine
+LuaU priority state machine
 ==================
 
 This project uses a [Lua priority queue](https://github.com/iskolbin/lpriorityqueue) as a base for a state machine, designed to control player characters in games.
@@ -7,6 +7,9 @@ This project uses a [Lua priority queue](https://github.com/iskolbin/lpriorityqu
 The state machine takes in State objects and places them into a priority queue. Each state has a starting function which has the ability to call wait() to yield the program and an ending or cancel function which is always called after the State leaves the queue in order to clean up the starting function.
 
 This results in a simple implementation for input queuing, inputting a state while another action is ongoing will place it into the priority queue. Once the ongoing state on the top of the queue is popped off, the queued state will be sifted up and be next to run.
+
+This project was made in Roblox Studio and requires features of the Roblox engine. A .rbxm file is included in Releases for Roblox Studio and (soon) a copyable example game to see the object in action.
+If you wish to port this to another lua engine, you must modify the internal StateMachine::checkTopStateChange() and StateMachine::resumeCorout() functions.
 
 State object
 ==================
@@ -52,61 +55,23 @@ Code between wait() calls are guaranteed to run in sequence, but the function ma
 State Machine object
 ==================
 
-As mentioned before, these functions should mainly be attached to user input.   
+As mentioned before, these functions should be attached to user input.   
 Create a new state machine for each player character, then clear it once the character dies/is removed.   
 
+You cannot call StateMachine functions that change the current state within States, StateMachine:addState() and StateMachine:removeState() should be avoided if they can possibly pop the top state. Instead, use the State return values to begin another state or remove the current state.   
+StateMachine:wait() must be used in place of every possible yield inside the State functions.   
 
-module.new(startingStates : {State}?) : StateMachine
-------------------
-If an array of States is passed, then the StateMachine will start with all inserted and only run the stateStartFunc of the highest priority State within the array.   
-If no State array is given, the StateMachine will be empty.
-
-
-StateMachine:addState(State : State) : nil
-------------------
-
-addState adds a State to the priority queue.   
-If the state has a higher priority than the active state (or the StateMachine is empty), then it will remove the active state and run the given state's stateStartFunc.
-
-
-StateMachine:removeState(stateName : string) : boolean
-------------------
-
-removeState dequeues a state using it's stateName, not a State object.   
-Similar to addState, this can cause a change in the active state.   
-The function returns true if a state was removed, then it will return true. returns false if no State was dequeued.
-
-
-StateMachine:hasActiveState(... : string) : boolean
-------------------
-
-This function checks if any of the given strings matches the active state, and if so, returns true.
-
-
-StateMachine:hasState(stateName : string) : State?
-------------------
-
-Maps a state name to the State within the StateMachine.   
-Can also be used to check if a state is anywhere within the StateMachine.
-
-
-StateMachine:getTopState() : State?
-------------------
-"Peek" function to get the top state of the StateMachine.   
-Returns nil if StateMachine is empty.
-
-
-StateMachine:clear(dontRunTop : boolean?)
-------------------
-Empties all states from the StateMachine.   
-If the boolean flag is toggled, the stateEndFunc or stateCancelFunc of the top state is not ran.
-
-
-StateMachine:removeVariant(variantName : string)
-------------------
-Removes all States with the assigned variantName.   
-Running removeState sequentially can result in intermediate startFuncs being ran if States are removed from highest to lowest priority.   
-Using this function to remove multiple states is preferred to bypass this issue.   
+| Function signature | Description |
+| -------- | -------- |
+| module.new(startingStates : {State}?) : StateMachine | If an array of States is passed, then the StateMachine will start with all inserted and only run the stateStartFunc of the highest priority State within the array.   <br> If no State array is given, the StateMachine will be empty. |
+| StateMachine:addState(State : State) : nil | addState adds a State to the priority queue.   <br> If the state has a higher priority than the active state (or the StateMachine is empty), then it will remove the active state and run the given state's stateStartFunc. |
+| StateMachine:removeState(stateName : string) : boolean | removeState dequeues a state using it's stateName, not a State object.   <br>Similar to addState, this can cause a change in the active state.   <br>The function returns true if a state was removed, then it will return true. returns false if no State was dequeued. |
+| StateMachine:hasActiveState(... : string) : boolean | This function checks if any of the given strings matches the active state, and if so, returns true. |
+| StateMachine:hasState(stateName : string) : State? | Maps a state name to the State within the StateMachine.   <br>Can also be used to check if a state is anywhere within the StateMachine.
+| StateMachine:getTopState() : State? | "Peek" function to get the top state of the StateMachine.   <br>Returns nil if StateMachine is empty. |
+| StateMachine:wait(waitingTime : number) | A wait function, during which the State code it's called in can terminate. <br> More details are included in the State section. |
+| StateMachine:clear(dontRunTop : boolean?) | Empties all states from the StateMachine.   <br>If the boolean flag is toggled, the stateEndFunc or stateCancelFunc of the top state is not ran.   <br>This should be ran to prevent memory leaks. |
+| StateMachine:removeVariant(variantName : string) | Removes all States with the assigned variantName.   <br>Running removeState sequentially can result in intermediate startFuncs being ran if States are removed from highest to lowest priority.   <br>Using this function to remove multiple states is preferred to bypass this issue.    |
 
 
 Code examples
